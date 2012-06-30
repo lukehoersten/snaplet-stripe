@@ -1,0 +1,2 @@
+snaplet-stripe
+==============
