@@ -1,0 +1,42 @@
+name:           snaplet-stripe
+version:        0.1
+synopsis:       Stripe snaplet for the Snap Framework
+description:    This snaplet contains support for using the Stripe
+                payment platform with a Snap Framework application.
+license:        BSD3
+author:         Luke Hoersten
+maintainer:     luke@hoersten.org
+build-type:     Simple
+cabal-version:  >= 1.6
+homepage:       https://github.com/LukeHoersten/snaplet-stripe
+category:       Web, Snap
+
+data-files:
+  resources/stripe/devel.cfg
+
+source-repository head
+  type:     git
+  location: https://github.com/LukeHoersten/snaplet-stripe
+
+Library
+  hs-source-dirs: src
+
+  exposed-modules:
+    Snap.Snaplet.Stripe
+
+  build-depends:
+    base         >= 4.4     && < 5,
+    bytestring   >= 0.9.1   && < 0.11,
+    snap         >= 0.11    && < 0.12,
+    heist        >= 0.11    && < 0.12,
+    text         >= 0.11    && < 0.12,
+    text-format  >= 0.3     && < 0.4,
+    configurator >= 0.2.0,
+    transformers >= 0.3.0,
+    mtl          >= 2       && < 3,
+    xmlhtml      >= 0.2,
+    stripe       >= 0.3     && < 0.4
+
+
+  ghc-options: -Wall -fwarn-tabs -funbox-strict-fields
+               -fno-warn-orphans -fno-warn-unused-do-bind
