@@ -28,16 +28,19 @@ import           Control.Monad.Trans.Writer (WriterT, runWriterT, tell)
 import qualified Data.Configurator          as C
 import           Data.List                  (intercalate)
 import           Data.Maybe                 (fromMaybe, isNothing)
+import           Data.Monoid                (mempty)
 import           Data.Text                  (Text)
 import           Data.Text.Encoding         (decodeUtf8)
 import           Data.Text.Format           (Format, Only (..), format)
 import qualified Data.Text.Lazy             as TL
-import           Heist                      (HeistT, Template)
-import           Snap.Snaplet               (Handler, Initializer, SnapletInit,
-                                             SnapletLens, getSnapletUserConfig,
-                                             makeSnaplet, with)
-import           Snap.Snaplet.Heist         (HasHeist, SnapletISplice,
-                                             addSplices)
+import           Heist                      (HeistConfig (..), HeistT, Template)
+import           Heist.SpliceAPI            (( ## ))
+import           Snap.Snaplet               (Handler, Initializer, Snaplet,
+                                             SnapletInit, SnapletLens,
+                                             getSnapletUserConfig, makeSnaplet,
+                                             with)
+import           Snap.Snaplet.Heist         (HasHeist, Heist, SnapletISplice,
+                                             addConfig)
 import qualified Text.XmlHtml               as X
 
 import           Web.Stripe.Charge          (Amount (..), Charge, ChargeId,
@@ -182,8 +185,8 @@ accessTokenToKey = APIKey . decodeUtf8
 
 
 -- Public Key Splice
-addStripeSplices :: (HasHeist b) => SnapletLens b StripeState -> Initializer b v ()
-addStripeSplices stripe = addSplices [("stripePublicKeyJs", stripePublicKeyJsSplice stripe)]
+addStripeSplices :: HasHeist b => Snaplet (Heist b) -> SnapletLens b StripeState -> Initializer b v ()
+addStripeSplices h stripe = addConfig h $ mempty { hcInterpretedSplices = ("stripePublicKeyJs" ## stripePublicKeyJsSplice stripe) }
 
 
 stripePublicKeyJsSplice :: SnapletLens b StripeState -> SnapletISplice b
