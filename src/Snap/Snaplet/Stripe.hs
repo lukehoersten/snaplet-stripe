@@ -196,4 +196,4 @@ stripePublicKeyJsSplice stripe = jsSplice =<< (lift $ with stripe getStripeState
 
 
 scriptSplice :: Monad m => Text -> HeistT n m Template
-scriptSplice t = return [X.Element "script" [] [X.TextNode t]]
+scriptSplice t = return [X.Element "script" [("type", "text/javascript")] [X.TextNode t]]
