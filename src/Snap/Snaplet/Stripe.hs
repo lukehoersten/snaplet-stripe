@@ -33,15 +33,16 @@ import           Data.Text                  (Text)
 import           Data.Text.Encoding         (decodeUtf8)
 import           Data.Text.Format           (Format, Only (..), format)
 import qualified Data.Text.Lazy             as TL
-import           Heist                      (HeistConfig (..), HeistT, Template)
+import           Heist                      (HeistConfig (..))
+import           Heist.Compiled             (nodeSplice, pureSplice)
 import           Heist.SpliceAPI            (( ## ))
 import           Snap.Snaplet               (Handler, Initializer, Snaplet,
                                              SnapletInit, SnapletLens,
                                              getSnapletUserConfig, makeSnaplet,
                                              with)
-import           Snap.Snaplet.Heist         (HasHeist, Heist, SnapletISplice,
-                                             addConfig)
-import qualified Text.XmlHtml               as X
+import           Snap.Snaplet.Heist         (HasHeist, Heist, SnapletCSplice,
+                                             SnapletISplice, addConfig)
+import           Text.XmlHtml               (Node (..))
 
 import           Web.Stripe.Charge          (Amount (..), Charge, ChargeId,
                                              Currency, chargeCustomerById,
@@ -186,14 +187,21 @@ accessTokenToKey = APIKey . decodeUtf8
 
 -- Public Key Splice
 addStripeSplices :: HasHeist b => Snaplet (Heist b) -> SnapletLens b StripeState -> Initializer b v ()
-addStripeSplices h stripe = addConfig h $ mempty { hcInterpretedSplices = ("stripePublicKeyJs" ## stripePublicKeyJsSplice stripe) }
+addStripeSplices h stripe = addConfig h $ mempty
+    { hcCompiledSplices    = ("stripePublicKeyJs" ## stripePublicKeyJsCSplice stripe)
+    , hcInterpretedSplices = ("stripePublicKeyJs" ## stripePublicKeyJsISplice stripe)
+    }
 
 
-stripePublicKeyJsSplice :: SnapletLens b StripeState -> SnapletISplice b
-stripePublicKeyJsSplice stripe = jsSplice =<< (lift $ with stripe getStripeState)
-    where renderJs = TL.toStrict . format ("var stripePublicKey = '{}';" :: Format) . Only . TL.fromStrict
-          jsSplice = scriptSplice . renderJs . unPublicKey . stripePublicKey
+stripePublicKeyJsISplice :: SnapletLens b StripeState -> SnapletISplice b
+stripePublicKeyJsISplice stripe = return . ssNodes =<< (lift $ with stripe getStripeState)
 
 
-scriptSplice :: Monad m => Text -> HeistT n m Template
-scriptSplice t = return [X.Element "script" [("type", "text/javascript")] [X.TextNode t]]
+stripePublicKeyJsCSplice :: SnapletLens b StripeState -> SnapletCSplice b
+stripePublicKeyJsCSplice stripe = (pureSplice . nodeSplice) ssNodes . lift $ with stripe getStripeState
+
+
+ssNodes :: StripeState -> [Node]
+ssNodes = scriptNodes . renderJs . unPublicKey . stripePublicKey
+  where renderJs = TL.toStrict . format ("var stripePublicKey = '{}';" :: Format) . Only . TL.fromStrict
+        scriptNodes t = [Element "script" [("type", "text/javascript")] [TextNode t]]
