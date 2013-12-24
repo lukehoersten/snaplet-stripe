@@ -47,8 +47,9 @@ import           Text.XmlHtml               (Node (..))
 import           Web.Stripe.Charge          (Amount (..), Charge, ChargeId,
                                              Currency, chargeCustomerById,
                                              chargeTokenById, getCharge)
-import           Web.Stripe.Client          (APIKey (..), StripeConfig (..),
-                                             StripeFailure, key, runStripeT)
+import           Web.Stripe.Client          (SecretKey (..), StripeConfig (..),
+                                             StripeFailure, StripeVersion (..),
+                                             runStripeT, stripeSecretKey)
 import           Web.Stripe.Connect         (AccessToken, ClientId, Landing,
                                              Scope, URL, authURL,
                                              createCustomerToken)
@@ -90,12 +91,13 @@ initStripe = makeSnaplet "stripe" "Stripe credit card payment" Nothing $ do
   config <- getSnapletUserConfig
 
   (stripeState, errors) <- runWriterT $ do
-    secretKey <- logErr "Must specify Strip secret key" $ C.lookup config "secret_key"
-    publicKey <- logErr "Must specify Strip public key" $ C.lookup config "public_key"
-    clientId  <- logErr "Must specify Strip client ID"  $ C.lookup config "client_id"
+    secretKey <- logErr "Must specify Strip secret key"  $ C.lookup config "secret_key"
+    publicKey <- logErr "Must specify Strip public key"  $ C.lookup config "public_key"
+    clientId  <- logErr "Must specify Strip client ID"   $ C.lookup config "client_id"
+    version   <- Just . maybe V20110915d OtherVersion <$> liftIO (C.lookup config "version")
     let caFilePath = Just "" -- This is unused by Stripe but vestigial in the Haskell library.
 
-    return $ StripeState <$> (StripeConfig <$> (APIKey <$> secretKey) <*> caFilePath) <*> (PublicKey <$> publicKey) <*> clientId
+    return $ StripeState <$> (StripeConfig <$> (SecretKey <$> secretKey) <*> caFilePath <*> version) <*> (PublicKey <$> publicKey) <*> clientId
   return $ fromMaybe (error $ intercalate "\n" errors) stripeState
 
 
@@ -132,7 +134,7 @@ chargeConnectCustomer :: (Functor m, HasStripe m, MonadIO m) => CustomerId -> Am
                       -> Maybe Description -> AccessToken -> Maybe Amount
                       -> m (Either StripeFailure Charge)
 chargeConnectCustomer cid am cu md k maf = withSC $ \sc -> do
-  let sc' = sc { key = accessTokenToKey k }
+  let sc' = sc { stripeSecretKey = accessTokenToKey k }
   let ch = tokId <$> createCustomerToken cid >>=
           (\tid -> chargeTokenById tid am cu md maf)
   runStripeT sc' ch
@@ -148,7 +150,7 @@ updateCustomerById cid mti mcid me md =
 connectCharge :: (Functor m, HasStripe m, MonadIO m) => AccessToken -> ChargeId
                  -> m (Either StripeFailure Charge)
 connectCharge k c = withSC $ \sc -> do
-  let sc' = sc { key = accessTokenToKey k }
+  let sc' = sc { stripeSecretKey = accessTokenToKey k }
   runStripeT sc' (getCharge c)
 
 
@@ -181,8 +183,8 @@ fromAmount :: Amount -> Float
 fromAmount = (/ 100) . fromIntegral . unAmount
 
 
-accessTokenToKey :: AccessToken -> APIKey
-accessTokenToKey = APIKey . decodeUtf8
+accessTokenToKey :: AccessToken -> SecretKey
+accessTokenToKey = SecretKey . decodeUtf8
 
 
 -- Public Key Splice
