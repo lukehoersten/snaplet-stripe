@@ -5,7 +5,7 @@ description:    This snaplet contains support for using the Stripe
                 payment platform with a Snap Framework application.
 license:        BSD3
 author:         Luke Hoersten
-maintainer:     luke@hoersten.org
+maintainer:     Luke Hoersten <luke@hoersten.org>
 build-type:     Simple
 cabal-version:  >= 1.6
 homepage:       https://github.com/LukeHoersten/snaplet-stripe
