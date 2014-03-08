@@ -1,4 +1,6 @@
 ~$
 \#.*\#$
+^cabal\.sandbox\.config$
 ^dist/
+^\.cabal-sandbox/
 _flymake.hs$

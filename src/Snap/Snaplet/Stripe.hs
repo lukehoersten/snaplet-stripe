@@ -30,7 +30,6 @@ import           Data.List                  (intercalate)
 import           Data.Maybe                 (fromMaybe, isNothing)
 import           Data.Monoid                (mempty)
 import           Data.Text                  (Text)
-import           Data.Text.Encoding         (decodeUtf8)
 import           Data.Text.Format           (Format, Only (..), format)
 import qualified Data.Text.Lazy             as TL
 import           Heist                      (HeistConfig (..))
@@ -184,7 +183,7 @@ fromAmount = (/ 100) . fromIntegral . unAmount
 
 
 accessTokenToKey :: AccessToken -> SecretKey
-accessTokenToKey = SecretKey . decodeUtf8
+accessTokenToKey = SecretKey
 
 
 -- Public Key Splice
