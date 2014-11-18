@@ -32,9 +32,11 @@ import           Data.Monoid                (mempty)
 import           Data.Text                  (Text)
 import           Data.Text.Format           (Format, Only (..), format)
 import qualified Data.Text.Lazy             as TL
-import           Heist                      (HeistConfig (..))
+import           Heist                      (scCompiledSplices,
+                                             scInterpretedSplices)
 import           Heist.Compiled             (nodeSplice, pureSplice)
 import           Heist.SpliceAPI            (( ## ))
+import           Lens.Family                ((&), (.~))
 import           Snap.Snaplet               (Handler, Initializer, Snaplet,
                                              SnapletInit, SnapletLens,
                                              getSnapletUserConfig, makeSnaplet,
@@ -188,10 +190,10 @@ accessTokenToKey = SecretKey
 
 -- Public Key Splice
 addStripeSplices :: HasHeist b => Snaplet (Heist b) -> SnapletLens b StripeState -> Initializer b v ()
-addStripeSplices h stripe = addConfig h $ mempty
-    { hcCompiledSplices    = ("stripePublicKeyJs" ## stripePublicKeyJsCSplice stripe)
-    , hcInterpretedSplices = ("stripePublicKeyJs" ## stripePublicKeyJsISplice stripe)
-    }
+addStripeSplices h stripe = addConfig h (mempty
+    & scCompiledSplices    .~ ("stripePublicKeyJs" ## stripePublicKeyJsCSplice stripe)
+    & scInterpretedSplices .~ ("stripePublicKeyJs" ## stripePublicKeyJsISplice stripe))
+
 
 
 stripePublicKeyJsISplice :: SnapletLens b StripeState -> SnapletISplice b
